@@ -9,16 +9,20 @@ TODO:
 	Create Restore functions
 		-able to view saved backups and select one
 
+            -WhatIf ?? Use this and try stuff
 #>
 
 using namespace System.Management.Automation.Host # Library for menu
 
-#$Date= ((Get-Date).ToString('MM-dd-yyyy-HH-mm'))					# Old Version
+$Date= ((Get-Date).ToString('MM-dd-yyyy-HH-mm'))					# Old Version
 $myDocs = [System.Environment]::GetFolderPath("MyDocuments")
 $appData = [System.Environment]::GetFolderPath("ApplicationData")
 $eldenPath = Join-Path -Path $appData -ChildPath "EldenRing"
+$eldenUser = Get-ChildItem  $eldenPath -Directory
+$restorePath = Join-Path -Path $eldenPath -ChildPath $eldenUser
 $docPath = Join-Path -Path $myDocs -ChildPath "EldenRingBackups"
-#$savePath = Join-Path -Path $docPath -ChildPath $Date   			#Old Version
+$sl2Files = Get-ChildItem -Path $eldenPath -Include "*.sl2*" -Recurse
+$restoreSavePath = Join-Path -Path $docPath -ChildPath $Date   			#Old Version
 #$savePath = Join-Path -Path $docPath -ChildPath $inputBackup
 
 function BackupSL2 {
@@ -27,18 +31,39 @@ function BackupSL2 {
 	else {
 		$inputBackup= Read-Host -Prompt "Name your backup: "
 		#INPUT VALIDATE THE ABOVE ^^^
+        #Validate $inputBackup
+
 		$savePath = Join-Path -Path $docPath -ChildPath $inputBackup # Move to Input Menu
 
-		Get-ChildItem -Path $eldenPath -Include "*.sl2*" -Recurse | Compress-Archive -DestinationPath $savePath".zip" -Force
+		$sl2Files | Compress-Archive -DestinationPath $savePath".zip" -Confirm -Force
+    #   Compress-Archive -DestinationPath $savePath".zip" -Force
 
 		New-Menu # Calls the menu again to keep the program open
 	}
 	
 }
 
-function restoreSL2 {
-	Write-Host 'INSERT RESTORE FUNCTIONS HERE'
 
+function restoreBackupSL2 {
+	if (![System.IO.Directory]::Exists($eldenPath)) {
+		"The Path Does Not Exist."}
+	else {
+		#$savePath = Join-Path -Path $docPath -ChildPath  # Saves folder as current date
+
+		$sl2Files | Compress-Archive -DestinationPath $restoreSavePath".zip" -Force
+    #   Compress-Archive -DestinationPath $savePath".zip" -Force
+
+		
+	}
+	
+}
+
+function restoreSL2 {
+    restoreBackupSL2 # Run the backup before restoring
+	Write-Host 'INSERT RESTORE FUNCTIONS HERE'
+    Get-ChildItem $docPath | Out-GridView -PassThru | Expand-Archive -Confirm -DestinationPath $restorePath -Force
+    
+    
 	New-Menu #Runs the program menu again to keep the program open
 }
 
@@ -63,34 +88,17 @@ function New-Menu {
 	
 }
 
-function Show-Menu {
-    param (
-        [string]$Title = 'Elden Ring Backup Script'
+Function Validate {
+    Param(
+    [Parameter(Mandatory=$true)]
+    [ValidateNotNullOrEmpty()]
+    [String[]]$Value
     )
-    Clear-Host
-    Write-Host "================ $Title ================"
+    }
     
-    Write-Host "1: Press '1' Launch Utility."
-    Write-Host "Q: Press 'Q' to quit."
-}
 
-<#
-do
- {
-    Show-Menu
-    $selection = Read-Host "Please make a selection"
-    switch ($selection)
-    {
-    '1' {
-    New-Menu
-    } 'q' {
-    'Quitting'
-    }
-    }
-    pause
- }
- until ($selection -eq 'q')
-#>
+
 
 # Run the Program Menu
 New-Menu
+
