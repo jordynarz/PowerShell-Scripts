@@ -3,40 +3,52 @@ Elden Ring Backup and Restore Script
 
 TODO: 
 	Contain the backup inside a function[COMPLETED]
-	Add Input for naming save folder [remove date?]
+	Add Input for naming save folder [COMPLETED]
 	Input validation
-	Create Menu[Working but not what I want]
-	Create Restore functions
+	Create Menu[COMPLETED]
+	Create Restore functions [COMPLETED]
 		-able to view saved backups and select one
 
-            -WhatIf ?? Use this and try stuff
+         
 #>
 
 using namespace System.Management.Automation.Host # Library for menu
 
-$Date= ((Get-Date).ToString('MM-dd-yyyy-HH-mm'))					# Old Version
-$myDocs = [System.Environment]::GetFolderPath("MyDocuments")
-$appData = [System.Environment]::GetFolderPath("ApplicationData")
-$eldenPath = Join-Path -Path $appData -ChildPath "EldenRing"
-$eldenUser = Get-ChildItem  $eldenPath -Directory
-$restorePath = Join-Path -Path $eldenPath -ChildPath $eldenUser
-$docPath = Join-Path -Path $myDocs -ChildPath "EldenRingBackups"
-$sl2Files = Get-ChildItem -Path $eldenPath -Include "*.sl2*" -Recurse
-$restoreSavePath = Join-Path -Path $docPath -ChildPath $Date   			#Old Version
-#$savePath = Join-Path -Path $docPath -ChildPath $inputBackup
+# Preferences
+$ErrorActionPreference = "Stop"		# Behavior - error actions to stop instead of continuing
+
+# Global Variables
+
+$Date= ((Get-Date).ToString('MM-dd-yyyy-HH-mm'))						# Auto currentDate save path
+$myDocs = [System.Environment]::GetFolderPath("MyDocuments")			# MyDocuments folder
+$appData = [System.Environment]::GetFolderPath("ApplicationData")		# AppData folder
+$eldenPath = Join-Path -Path $appData -ChildPath "EldenRing"			# path = AppData\Roaming\EldenRing\
+$eldenUser = Get-ChildItem  $eldenPath -Directory						# Just the user number inside the path = AppData\Roaming\EldenRing\
+$restorePath = Join-Path -Path $eldenPath -ChildPath $eldenUser			# path = AppData\Roaming\EldenRing\1234...\
+$docPath = Join-Path -Path $myDocs -ChildPath "EldenRingBackups"		# path = MyDocuments/EldenRingBackups
+$sl2Files = Get-ChildItem -Path $eldenPath -Include "*.sl2*" -Recurse	# .sl2 files that are the Elden Ring save data inside the path = AppData\Roaming\EldenRing\1234...\
+$restoreSavePath = Join-Path -Path $docPath -ChildPath $Date   			# Auto currentDate save path in MyDocuments
+
 
 function BackupSL2 {
 	if (![System.IO.Directory]::Exists($eldenPath)) {
 		"The Path Does Not Exist."}
 	else {
-		$inputBackup= Read-Host -Prompt "Name your backup: "
+		$inputBackup= Read-Host -Prompt "Name your backup"
 		#INPUT VALIDATE THE ABOVE ^^^
-        #Validate $inputBackup
+        Validate $inputBackup # validate the user input for word characters and not null or empty
 
-		$savePath = Join-Path -Path $docPath -ChildPath $inputBackup # Move to Input Menu
+		$savePath = Join-Path -Path $docPath -ChildPath $inputBackup # path = MyDocuments
+		
+		$FileExists = Test-Path -Path $savePath".zip" -PathType Leaf
+		if ($FileExists -eq $True) {throw "There is a backup with this name"}	# Error catching if the file EXISTS
+		
 
-		$sl2Files | Compress-Archive -DestinationPath $savePath".zip" -Confirm -Force
+		$sl2Files | Compress-Archive -DestinationPath $savePath".zip" -Force
     #   Compress-Archive -DestinationPath $savePath".zip" -Force
+		
+
+
 
 		New-Menu # Calls the menu again to keep the program open
 	}
@@ -48,21 +60,18 @@ function restoreBackupSL2 {
 	if (![System.IO.Directory]::Exists($eldenPath)) {
 		"The Path Does Not Exist."}
 	else {
-		#$savePath = Join-Path -Path $docPath -ChildPath  # Saves folder as current date
-
-		$sl2Files | Compress-Archive -DestinationPath $restoreSavePath".zip" -Force
-    #   Compress-Archive -DestinationPath $savePath".zip" -Force
-
 		
+		$sl2Files | Compress-Archive -DestinationPath $restoreSavePath".zip" -Force
+    		
 	}
 	
 }
 
 function restoreSL2 {
     restoreBackupSL2 # Run the backup before restoring
-	Write-Host 'INSERT RESTORE FUNCTIONS HERE'
-    Get-ChildItem $docPath | Out-GridView -PassThru | Expand-Archive -Confirm -DestinationPath $restorePath -Force
-    
+	#Write-Host 'INSERT RESTORE FUNCTIONS HERE'
+    Get-ChildItem $docPath | Out-GridView -PassThru | Expand-Archive -DestinationPath $restorePath -Force
+    Write-Host "******Restore Completed******" -ForegroundColor Blue
     
 	New-Menu #Runs the program menu again to keep the program open
 }
@@ -92,8 +101,15 @@ Function Validate {
     Param(
     [Parameter(Mandatory=$true)]
     [ValidateNotNullOrEmpty()]
+	[ValidatePattern("\w")]		# \w is any word character 
     [String[]]$Value
     )
+	#Write-Host $Value
+	#[System.IO.FileInfo] $Value
+	#Test-Path -Path $Value -IsValid
+
+
+
     }
     
 
