@@ -35,7 +35,10 @@ function BackupSL2 {
 		"The Path Does Not Exist."}
 	else {
 		$inputBackup= Read-Host -Prompt "Name your backup"
-		#INPUT VALIDATE THE ABOVE ^^^
+		
+		if ($inputBackup -eq '') {
+			$inputBackup = ((Get-Date).ToString('MM-dd-yyyy-HH-mm')) # If the input is blank name the backup the current date
+		}
         Validate $inputBackup # validate the user input for word characters and not null or empty
 
 		$savePath = Join-Path -Path $docPath -ChildPath $inputBackup # path = MyDocuments
@@ -45,7 +48,7 @@ function BackupSL2 {
 		
 
 		$sl2Files | Compress-Archive -DestinationPath $savePath".zip" -Force
-    #   Compress-Archive -DestinationPath $savePath".zip" -Force
+    
 		
 
 
@@ -61,7 +64,7 @@ function restoreBackupSL2 {
 		"The Path Does Not Exist."}
 	else {
 		
-		$sl2Files | Compress-Archive -DestinationPath $restoreSavePath".zip" -Force
+		$sl2Files | Compress-Archive -DestinationPath $restoreSavePath".zip" -Force		# compress sl2 files into MyDocs with the current date
     		
 	}
 	
@@ -100,10 +103,11 @@ function New-Menu {
 Function Validate {
     Param(
     [Parameter(Mandatory=$true)]
-    [ValidateNotNullOrEmpty()]
+    [ValidateNotNullOrEmpty()] # This is not needed with the below ValidatePattern /w 
 	[ValidatePattern("\w")]		# \w is any word character 
     [String[]]$Value
     )
+	
 	#Write-Host $Value
 	#[System.IO.FileInfo] $Value
 	#Test-Path -Path $Value -IsValid
